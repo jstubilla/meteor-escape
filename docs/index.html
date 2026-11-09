@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meteor Escape</title>
+<style>
+  body { margin: 0; background: #0b0f17; color: #d7e0ea; font-family: Consolas, "Courier New", monospace;
+         display: flex; flex-direction: column; align-items: center; padding: 24px 12px; }
+  h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: 2px; color: #ffb454; }
+  .sub { color: #7d8a99; font-size: 13px; margin-bottom: 16px; }
+  #hud { font-size: 16px; margin-bottom: 8px; }
+  #board { background: #000; border: 1px solid #263040; padding: 10px 14px; font-size: 16px; line-height: 1.15;
+           white-space: pre; margin: 0; }
+  #board .p { color: #5ad1ff; font-weight: bold; }
+  #board .m { color: #ff7a59; }
+  #board .e { color: #1e2633; }
+  .controls { margin-top: 14px; display: flex; gap: 8px; }
+  button { font: inherit; background: #1a2230; color: #d7e0ea; border: 1px solid #334155; border-radius: 6px;
+           padding: 10px 18px; cursor: pointer; }
+  button:hover { background: #243044; }
+  #msg { margin-top: 12px; min-height: 22px; color: #ffb454; }
+  details { margin-top: 18px; max-width: 760px; width: 100%; }
+  summary { cursor: pointer; color: #7d8a99; }
+  pre.code { background: #111723; padding: 10px; overflow: auto; font-size: 13px; border: 1px solid #263040; }
+</style>
+</head>
+<body>
+  <h1>METEOR ESCAPE</h1>
+  <div class="sub">Python game running in the browser (Pyodide). Same code as the terminal version.</div>
+  <div id="hud">Loading Python…</div>
+  <pre id="board"></pre>
+  <div class="controls">
+    <button data-key="a">◀ Left (A)</button>
+    <button data-key="">Stay (Space)</button>
+    <button data-key="d">Right (D) ▶</button>
+    <button id="restart">Restart (R)</button>
+  </div>
+  <div id="msg"></div>
+  <details>
+    <summary>View Python source files</summary>
+    <div id="sources"></div>
+  </details>
+
+<script src="pyodide/pyodide.js"></script>
+<script>
+const FILES = {"config.py": "# config.py - game settings in one place\nBOARD_WIDTH = 30\nBOARD_HEIGHT = 16\nSTART_LIVES = 3\nPOINTS_PER_METEOR = 10\nPOINTS_PER_LEVEL = 50\n\nPLAYER_CHAR = \"A\"\nMETEOR_CHAR = \"*\"\nEMPTY_CHAR = \".\"\n", "player.py": "# player.py - player data (dictionary) and movement\nfrom config import BOARD_WIDTH, BOARD_HEIGHT, START_LIVES\n\n\ndef create_player():\n    # Dictionary: stores player info by name (key -> value)\n    return {\n        \"x\": BOARD_WIDTH // 2,\n        \"y\": BOARD_HEIGHT - 1,   # spaceship stays on the bottom row\n        \"lives\": START_LIVES,\n    }\n\n\ndef move_player(player, key):\n    if key == \"a\" and player[\"x\"] > 0:\n        player[\"x\"] -= 1\n    elif key == \"d\" and player[\"x\"] < BOARD_WIDTH - 1:\n        player[\"x\"] += 1\n    # the two checks above keep the ship inside the board\n", "meteors.py": "# meteors.py - meteor list, movement and collision detection\nimport random\nfrom config import BOARD_WIDTH, BOARD_HEIGHT\n\n\ndef spawn_meteor(meteors):\n    # List: each meteor is a small dictionary {\"x\": column, \"y\": row}\n    meteors.append({\"x\": random.randint(0, BOARD_WIDTH - 1), \"y\": 0})\n\n\ndef move_meteors(meteors):\n    \"\"\"Move every meteor down one row. Returns how many passed the bottom.\"\"\"\n    passed = 0\n    for meteor in meteors[:]:          # O(n) traversal (copy so we can remove safely)\n        meteor[\"y\"] += 1\n        if meteor[\"y\"] >= BOARD_HEIGHT:\n            meteors.remove(meteor)\n            passed += 1\n    return passed\n\n\ndef check_collision(meteors, player):\n    \"\"\"Return True if any meteor is on the player's cell. Removes those meteors.\"\"\"\n    hit = False\n    for meteor in meteors[:]:          # O(n) linear check\n        if meteor[\"x\"] == player[\"x\"] and meteor[\"y\"] == player[\"y\"]:\n            meteors.remove(meteor)\n            hit = True\n    return hit                         # caller removes only ONE life per update\n", "scoring.py": "# scoring.py - points and level\nfrom config import POINTS_PER_METEOR, POINTS_PER_LEVEL\n\n\ndef add_points(game, meteors_avoided):\n    game[\"score\"] += meteors_avoided * POINTS_PER_METEOR\n    game[\"level\"] = game[\"score\"] // POINTS_PER_LEVEL + 1   # level up every 50 points\n", "game.py": "# game.py - main game loop and board drawing\nimport os\nfrom config import BOARD_WIDTH, BOARD_HEIGHT, PLAYER_CHAR, METEOR_CHAR, EMPTY_CHAR\nfrom player import create_player, move_player\nfrom meteors import spawn_meteor, move_meteors, check_collision\nfrom scoring import add_points\n\n\ndef build_board(player, meteors):\n    # 2D list: board[row][column]\n    board = [[EMPTY_CHAR] * BOARD_WIDTH for _ in range(BOARD_HEIGHT)]\n    for m in meteors:\n        board[m[\"y\"]][m[\"x\"]] = METEOR_CHAR\n    board[player[\"y\"]][player[\"x\"]] = PLAYER_CHAR\n    return board\n\n\ndef draw(board, player, game):\n    os.system(\"cls\" if os.name == \"nt\" else \"clear\")\n    print(\"=== METEOR ESCAPE ===\")\n    print(f\"Score: {game['score']}   Lives: {player['lives']}   Level: {game['level']}\")\n    for row in board:\n        print(\" \".join(row))\n    print(\"[a] left  [d] right  [Enter] stay  [q] quit\")\n\n\ndef update(player, game, meteors, key):\n    \"\"\"One game update (1 turn): move, spawn, fall, collide, score.\"\"\"\n    move_player(player, key)\n    for _ in range(game[\"level\"]):      # higher level -> more meteors per turn\n        spawn_meteor(meteors)\n    avoided = move_meteors(meteors)\n    if check_collision(meteors, player):\n        player[\"lives\"] -= 1            # only one life lost per update\n    add_points(game, avoided)\n\n\ndef run():\n    while True:\n        play_one_game()\n        again = input(\"\\n[R] restart  [Q] quit\\n> \").strip().lower()\n        if again != \"r\":\n            print(\"Thanks for playing!\")\n            break\n\n\ndef play_one_game():\n    player = create_player()\n    game = {\"score\": 0, \"level\": 1}     # dictionary for game info\n    meteors = []                        # list of active meteors\n\n    while player[\"lives\"] > 0:\n        draw(build_board(player, meteors), player, game)\n        key = input(\"> \").strip().lower()\n        if key == \"q\":\n            break\n        update(player, game, meteors, key)\n\n    draw(build_board(player, meteors), player, game)\n    print(f\"\\nGAME OVER - Final score: {game['score']}\")\n", "main.py": "# main.py - entry point:  python main.py\nfrom game import run\n\nif __name__ == \"__main__\":\n    run()\n"};
+
+const hud = document.getElementById("hud");
+const boardEl = document.getElementById("board");
+const msg = document.getElementById("msg");
+let py = null, over = false;
+
+// show source code
+const src = document.getElementById("sources");
+for (const [name, code] of Object.entries(FILES)) {
+  const h = document.createElement("h4"); h.textContent = name;
+  const p = document.createElement("pre"); p.className = "code"; p.textContent = code;
+  src.append(h, p);
+}
+
+function render(state) {
+  const s = state.toJs({ dict_converter: Object.fromEntries });
+  state.destroy();
+  hud.textContent = `Score: ${s.score}   Lives: ${s.lives}   Level: ${s.level}`;
+  boardEl.innerHTML = s.board.map(row => row.map(c =>
+    c === "A" ? '<span class="p">A</span>' : c === "*" ? '<span class="m">*</span>' : '<span class="e">.</span>'
+  ).join(" ")).join("\n");
+  over = s.lives <= 0;
+  msg.textContent = over ? `GAME OVER — Final score: ${s.score}. Press R to restart.` : "";
+}
+
+function step(key) {
+  if (!py || over) return;
+  render(py.globals.get("web_step")(key));
+}
+function restart() {
+  if (!py) return;
+  render(py.globals.get("web_new")());
+}
+
+document.querySelectorAll("button[data-key]").forEach(b => b.onclick = () => step(b.dataset.key));
+document.getElementById("restart").onclick = restart;
+document.addEventListener("keydown", e => {
+  const k = e.key.toLowerCase();
+  if (k === "a" || k === "arrowleft") step("a");
+  else if (k === "d" || k === "arrowright") step("d");
+  else if (k === " " || k === "enter") { e.preventDefault(); step(""); }
+  else if (k === "r") restart();
+});
+
+(async () => {
+  try {
+    py = await loadPyodide({ indexURL: new URL("pyodide/", location.href).href, stdLibURL: new URL("pyodide/python_stdlib.data.wasm", location.href).href });
+    for (const [name, code] of Object.entries(FILES)) py.FS.writeFile(name, code);
+    py.runPython(`
+import sys; sys.path.insert(0, ".")
+from player import create_player
+from game import build_board, update
+
+def web_new():
+    global player, game, meteors
+    player = create_player()
+    game = {"score": 0, "level": 1}
+    meteors = []
+    return state()
+
+def web_step(key):
+    update(player, game, meteors, key)
+    return state()
+
+def state():
+    return {"board": build_board(player, meteors), "score": game["score"],
+            "lives": player["lives"], "level": game["level"]}
+`);
+    restart();
+  } catch (err) {
+    hud.textContent = "Could not load Python: " + err;
+  }
+})();
+</script>
+</body>
+</html>
