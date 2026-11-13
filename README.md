@@ -29,7 +29,7 @@ On Mac or Linux, use `python3 main.py`. Without `windows-curses` on Windows, the
 - You start with 3 lives.
 - Each meteor you avoid is worth 10 points.
 - The level goes up every 50 points. Higher levels have more and faster meteors.
-- The game ends when your lives reach zero. You can then save your score.
+- The game ends when your lives reach zero. Then you can save your score (S), view scores (V), restart (R), or quit (Q).
 
 ## Tests
 

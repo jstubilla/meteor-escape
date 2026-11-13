@@ -42,12 +42,27 @@ def search_menu():
 
 
 def game_over(score):
-    print(f"\n*** GAME OVER ***  Final score: {score}")
-    name = input("Enter your name to save your score (or press Enter to skip): ").strip()
-    if name:
-        add_score(name[:12], score)
-        print("Score saved!")
-    return input("[R] Restart   [Enter] Main menu\n> ").strip().lower() == "r"
+    """After game over: save score, view scores, restart, or quit."""
+    saved = False
+    while True:
+        print(f"\n*** GAME OVER ***  Final score: {score}")
+        print("[S] Save score   [V] View scores   [R] Restart   [Q] Quit")
+        choice = input("> ").strip().lower()
+        if choice == "s":
+            if saved:
+                print("Score already saved.")
+                continue
+            name = input("Enter your name: ").strip()
+            if name:
+                add_score(name[:12], score)
+                saved = True
+                print("Score saved!")
+        elif choice == "v":
+            show_leaderboard()
+        elif choice == "r":
+            return "restart"
+        elif choice == "q":
+            return "quit"
 
 
 def main():
@@ -63,8 +78,12 @@ def main():
         print("4. Quit")
         choice = input("> ").strip().lower()
         if choice == "1":
-            while game_over(play()):    # R restarts right away
-                pass
+            result = game_over(play())
+            while result == "restart":  # R starts a new game right away
+                result = game_over(play())
+            if result == "quit":
+                print("Thanks for playing!")
+                break
         elif choice == "2":
             show_leaderboard()
         elif choice == "3":
