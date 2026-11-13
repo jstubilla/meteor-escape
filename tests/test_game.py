@@ -1,4 +1,3 @@
-# tests/test_game.py - run with:  python -m unittest discover -s tests
 import os
 import sys
 import tempfile
@@ -29,7 +28,6 @@ class TestPlayer(unittest.TestCase):
 class TestMeteors(unittest.TestCase):
     def test_collision_loses_only_one_life(self):
         player, game, meteors = new_game()
-        # two meteors right above the ship: both hit in the same update
         meteors.append({"x": player["x"], "y": player["y"] - 1})
         meteors.append({"x": player["x"], "y": player["y"] - 1})
         update(player, game, meteors, "")
@@ -51,9 +49,9 @@ class TestMeteors(unittest.TestCase):
 class TestScoring(unittest.TestCase):
     def test_points_and_level(self):
         game = {"score": 0, "level": 1}
-        add_points(game, 4)             # 40 points
+        add_points(game, 4)
         self.assertEqual(game["level"], 1)
-        add_points(game, 1)             # 50 points
+        add_points(game, 1)
         self.assertEqual(game["score"], 50)
         self.assertEqual(game["level"], 2)
 

@@ -1,7 +1,6 @@
-# main.py - start menu, game-over menu, leaderboard and search
 from config import LEADERBOARD_SIZE
 from leaderboard import load_scores, add_score, insertion_sort, linear_search, binary_search
-from terminal_ui import play, clear, HAS_CURSES
+from terminal_ui import play, clear, curses
 
 
 def show_leaderboard():
@@ -9,8 +8,8 @@ def show_leaderboard():
     print("\n=== LEADERBOARD ===")
     if not scores:
         print("No scores yet.")
-    for rank, record in enumerate(scores[:LEADERBOARD_SIZE], start=1):
-        print(f"{rank:>2}. {record['name']:<12} {record['score']}")
+    for rank, s in enumerate(scores[:LEADERBOARD_SIZE], 1):
+        print(f"{rank:>2}. {s['name']:<12} {s['score']}")
     input("\nPress Enter to go back...")
 
 
@@ -20,6 +19,7 @@ def search_menu():
     print("1. Find a player by name (linear search)")
     print("2. Find a score (binary search)")
     choice = input("> ").strip()
+
     if choice == "1":
         name = input("Name: ").strip()
         i = linear_search(scores, name)
@@ -28,30 +28,27 @@ def search_menu():
         else:
             print(f"Found {scores[i]['name']}: best score {scores[i]['score']} (rank {i + 1})")
     elif choice == "2":
-        try:
-            target = int(input("Score: ").strip())
-        except ValueError:
+        text = input("Score: ").strip()
+        i = binary_search(scores, int(text)) if text.isdigit() else None
+        if i is None:
             print("Please type a number.")
+        elif i == -1:
+            print(f"No one has a score of {text}.")
         else:
-            i = binary_search(scores, target)
-            if i == -1:
-                print(f"No one has a score of {target}.")
-            else:
-                print(f"Score {target} belongs to {scores[i]['name']} (rank {i + 1})")
+            print(f"Score {text} belongs to {scores[i]['name']} (rank {i + 1})")
+
     input("\nPress Enter to go back...")
 
 
 def game_over(score):
-    """After game over: save score, view scores, restart, or quit."""
     saved = False
     while True:
         print(f"\n*** GAME OVER ***  Final score: {score}")
         print("[S] Save score   [V] View scores   [R] Restart   [Q] Quit")
         choice = input("> ").strip().lower()
-        if choice == "s":
-            if saved:
-                print("Score already saved.")
-                continue
+        if choice == "s" and saved:
+            print("Score already saved.")
+        elif choice == "s":
             name = input("Enter your name: ").strip()
             if name:
                 add_score(name[:12], score)
@@ -71,15 +68,16 @@ def main():
         print("=========================")
         print("      METEOR ESCAPE      ")
         print("=========================")
-        print("Mode:", "real-time" if HAS_CURSES else "turn-based (pip install windows-curses for real-time)")
+        print("Mode:", "real-time" if curses else "turn-based (pip install windows-curses for real-time)")
         print("1. Play")
         print("2. Leaderboard")
         print("3. Search scores")
         print("4. Quit")
         choice = input("> ").strip().lower()
+
         if choice == "1":
             result = game_over(play())
-            while result == "restart":  # R starts a new game right away
+            while result == "restart":
                 result = game_over(play())
             if result == "quit":
                 print("Thanks for playing!")

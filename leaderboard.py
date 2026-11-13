@@ -1,4 +1,3 @@
-# leaderboard.py - save, load, sort and search high scores
 import json
 from pathlib import Path
 
@@ -7,58 +6,51 @@ SCORES_FILE = Path(__file__).parent / "data" / "high_scores.json"
 
 def load_scores(path=SCORES_FILE):
     try:
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
+        return json.loads(Path(path).read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
-        return []                       # no file yet, or broken file -> empty list
+        return []
 
 
 def save_scores(scores, path=SCORES_FILE):
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(scores, f, indent=2)
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(scores, indent=2), encoding="utf-8")
 
 
 def insertion_sort(scores):
-    """Sort records from highest to lowest score. O(n^2) worst case."""
-    result = list(scores)
-    for i in range(1, len(result)):
-        current = result[i]
+    out = list(scores)
+    for i in range(1, len(out)):
+        cur = out[i]
         j = i - 1
-        # shift lower scores one place to the right
-        while j >= 0 and result[j]["score"] < current["score"]:
-            result[j + 1] = result[j]
+        while j >= 0 and out[j]["score"] < cur["score"]:
+            out[j + 1] = out[j]
             j -= 1
-        result[j + 1] = current
-    return result
+        out[j + 1] = cur
+    return out
 
 
 def linear_search(scores, name):
-    """Check names one by one. Returns the index, or -1 if not found. O(n)"""
-    for i in range(len(scores)):
-        if scores[i]["name"].lower() == name.lower():
+    for i, s in enumerate(scores):
+        if s["name"].lower() == name.lower():
             return i
     return -1
 
 
 def binary_search(scores, target):
-    """Find a score in a list sorted high -> low. Returns the index, or -1. O(log n)"""
-    low, high = 0, len(scores) - 1
-    while low <= high:
-        mid = (low + high) // 2
-        value = scores[mid]["score"]
-        if value == target:
+    lo, hi = 0, len(scores) - 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        val = scores[mid]["score"]
+        if val == target:
             return mid
-        elif value > target:            # list goes high -> low, so look right
-            low = mid + 1
+        if val > target:
+            lo = mid + 1
         else:
-            high = mid - 1
+            hi = mid - 1
     return -1
 
 
 def add_score(name, score, path=SCORES_FILE):
-    scores = load_scores(path)
-    scores.append({"name": name, "score": score})
-    scores = insertion_sort(scores)
+    scores = insertion_sort(load_scores(path) + [{"name": name, "score": score}])
     save_scores(scores, path)
     return scores

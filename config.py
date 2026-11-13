@@ -1,11 +1,10 @@
-# config.py - game settings in one place
 BOARD_WIDTH = 30
 BOARD_HEIGHT = 16
 START_LIVES = 3
 POINTS_PER_METEOR = 10
 POINTS_PER_LEVEL = 50
+LEADERBOARD_SIZE = 10
 
 PLAYER_CHAR = "A"
 METEOR_CHAR = "*"
 EMPTY_CHAR = "."
-LEADERBOARD_SIZE = 10      # how many scores to show

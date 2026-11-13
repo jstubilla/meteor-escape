@@ -1,37 +1,23 @@
 # Meteor Escape
 
-A spaceship survival game in Python. Move left and right to dodge falling meteors.
+A terminal spaceship survival game in Python.
 
 Play online: https://jstubilla.github.io/meteor-escape/
 
-## How to run
-
-Requirements: Python 3.8 or newer.
+## Run
 
 ```
-pip install -r requirements.txt
+pip install windows-curses
 python main.py
 ```
 
-On Mac or Linux, use `python3 main.py`. Without `windows-curses` on Windows, the game still runs, in turn-based mode.
+The first line is only needed on Windows. On Mac or Linux, run `python3 main.py`.
 
 ## Controls
 
-| Key | Action |
-|---|---|
-| A / Left Arrow | Move left |
-| D / Right Arrow | Move right |
-| Q | Quit the game |
-| R | Restart after game over |
+A / Left: move left. D / Right: move right. Q: quit. R: restart.
 
-## Rules
-
-- You start with 3 lives.
-- Each meteor you avoid is worth 10 points.
-- The level goes up every 50 points. Higher levels have more and faster meteors.
-- The game ends when your lives reach zero. Then you can save your score (S), view scores (V), restart (R), or quit (Q).
-
-## Tests
+## Test
 
 ```
 python -m unittest discover -s tests
