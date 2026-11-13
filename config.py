@@ -8,3 +8,4 @@ POINTS_PER_LEVEL = 50
 PLAYER_CHAR = "A"
 METEOR_CHAR = "*"
 EMPTY_CHAR = "."
+LEADERBOARD_SIZE = 10      # how many scores to show
